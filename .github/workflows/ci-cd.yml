@@ -1,6 +1,5 @@
 name: CI/CD
 
-
 on:
   push:
     branches:
@@ -87,25 +86,61 @@ jobs:
           name: bandit-report
           path: bandit-report.json
 
-  cd:
-    name: CD - buildar imagem Docker
+  review:
+    name: Review - ambiente temporario
     runs-on: ubuntu-latest
-    needs: ci
-    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    if: github.event_name == 'pull_request'
+    environment:
+      name: review/pr-${{ github.event.number }}
+      url: http://localhost:5000
 
     steps:
       - name: Checkout do repositorio
         uses: actions/checkout@v4
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+      - name: Subir a aplicacao para review
+        run: |
+          docker compose up -d app
+          for i in $(seq 1 60); do
+            if curl -fsS http://localhost:5000/about >/dev/null; then
+              echo "Aplicacao pronta para review"
+              docker compose logs app > review-app.log
+              exit 0
+            fi
+            sleep 2
+          done
+          docker compose logs app > review-app.log || true
+          exit 1
 
-      - name: Build imagem Docker
-        uses: docker/build-push-action@v6
+      - name: Upload dos logs do review
+        uses: actions/upload-artifact@v4
+        if: always()
         with:
-          context: .
-          file: ./Dockerfile
-          push: false
-          tags: estudo-de-caso-hdb:latest
-          cache-from: type=gha
-          cache-to: type=gha
+          name: review-logs-pr-${{ github.event.number }}
+          path: review-app.log
+
+  stage:
+    name: Stage + DAST com OWASP ZAP
+    runs-on: ubuntu-latest
+    needs: ci
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    environment:
+      name: stage
+
+    steps:
+      - name: Checkout do repositorio
+        uses: actions/checkout@v4
+
+      - name: Preparar pasta de relatorios do ZAP
+        run: mkdir -p zap-reports
+
+      - name: Subir stage e executar DAST com ZAP
+        run: |
+          docker compose up --build --abort-on-container-exit --exit-code-from zap
+
+      - name: Upload relatorios do ZAP
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: zap-reports
+          path: zap-reports/
