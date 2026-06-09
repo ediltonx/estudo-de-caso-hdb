@@ -1,0 +1,53 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    pull_policy: never
+    container_name: estudo-de-caso-hdb-app
+    environment:
+      SECRET_KEY: change-me
+      DATABASE_URL: sqlite:////tmp/site.db
+      PYTHONUNBUFFERED: "1"
+    ports:
+      - "5000:5000"
+    restart: unless-stopped
+
+  zap:
+    image: ghcr.io/zaproxy/zaproxy:stable
+    container_name: estudo-de-caso-hdb-zap
+    depends_on:
+      - app
+    command:
+      - sh
+      - -lc
+      - |
+        echo "Aguardando a aplicacao subir..."
+        sleep 15
+        mkdir -p /zap/wrk
+        # Try running zap-full-scan.py from PATH or common locations
+        if command -v zap-full-scan.py >/dev/null 2>&1; then
+          exec zap-full-scan.py \
+            -t http://app:5000 \
+            -r /zap/wrk/zap-report.html \
+            -J /zap/wrk/zap-report.json
+        elif [ -f /zap/zap-full-scan.py ]; then
+          exec python3 /zap/zap-full-scan.py \
+            -t http://app:5000 \
+            -r /zap/wrk/zap-report.html \
+            -J /zap/wrk/zap-report.json
+        elif [ -f /usr/local/bin/zap-full-scan.py ]; then
+          exec python3 /usr/local/bin/zap-full-scan.py \
+            -t http://app:5000 \
+            -r /zap/wrk/zap-report.html \
+            -J /zap/wrk/zap-report.json
+        else
+          echo "zap-full-scan.py not found. Listing likely locations for debugging:" >&2
+          ls -la /zap || true
+          ls -la /usr/local/bin || true
+          ls -la /usr/bin || true
+          exit 127
+        fi
+    volumes:
+      - ./zap-reports:/zap/wrk
+    restart: "no"
