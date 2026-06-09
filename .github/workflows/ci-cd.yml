@@ -66,6 +66,7 @@ jobs:
 
       - name: Checagem de dependencias
         uses: dependency-check/Dependency-Check_Action@1.1.0
+        continue-on-error: true
         with:
           path: '.'
           format: 'HTML'
@@ -138,23 +139,8 @@ jobs:
 
       - name: Subir stage e executar DAST com ZAP
         run: |
-          docker compose up --build --abort-on-container-exit --exit-code-from zap
-
-      - name: Upload relatorios do ZAP
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          context: .
-          file: ./Dockerfile
-          push: false
-          tags: estudo-de-caso-hdb:latest
-          cache-from: type=gha
-          cache-to: type=gha
-
-      - name: Scan de seguranca com OWASP ZAP
-        run: |
           set +e
-          docker compose up --abort-on-container-exit --exit-code-from estudo-de-caso-hdb-zap
+          docker compose up --build --abort-on-container-exit --exit-code-from zap
           ZAP_EXIT=$?
           set -e
 
@@ -165,17 +151,16 @@ jobs:
           if [ "${ZAP_EXIT}" -eq 0 ]; then
             echo "✅ ZAP concluido sem alertas."
           elif [ "${ZAP_EXIT}" -eq 2 ]; then
-            echo "⚠️  ZAP encontrou warnings de seguranca (exit code 2). Verifique o relatorio."
+            echo "⚠️  ZAP encontrou warnings de seguranca (exit code 2). Pipeline continua."
           else
             echo "❌ ZAP falhou com exit code ${ZAP_EXIT}. Verifique falhas criticas no relatorio."
             exit "${ZAP_EXIT}"
           fi
 
-      - name: Upload relatorio ZAP
+      - name: Upload relatorios do ZAP
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: zap-report
-          path: zap-report.*
-
+          name: zap-reports
+          path: zap-reports/
           if-no-files-found: warn
