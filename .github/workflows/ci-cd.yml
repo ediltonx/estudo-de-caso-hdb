@@ -30,6 +30,18 @@ jobs:
       - name: Instalar dependencias
         run: python -m pip install --upgrade pip && pip install -r requirements.txt
 
+      - name: Instalar ferramentas de qualidade
+        run: pip install flake8 black isort pytest
+
+      - name: Verificar formatacao com Black
+        run: black --check todo_project --verbose || true
+
+      - name: Verificar imports com isort
+        run: isort --check-only todo_project --verbose || true
+
+      - name: Lint com flake8
+        run: flake8 todo_project --max-line-length=120 --count --statistics || true
+
       - name: Verificar sintaxe dos arquivos Python
         run: python -m compileall todo_project
 
@@ -37,6 +49,17 @@ jobs:
         env:
           PYTHONPATH: ./todo_project
         run: python -c "from todo_project import app; print(app.name)"
+
+      - name: Verificacao de seguranca com bandit
+        run: pip install bandit && bandit -r todo_project -f json -o bandit-report.json || true
+        continue-on-error: true
+
+      - name: Upload do relatorio de seguranca
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: bandit-report
+          path: bandit-report.json
 
   cd:
     name: CD - publicar imagem no GHCR
