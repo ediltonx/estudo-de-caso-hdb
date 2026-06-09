@@ -64,6 +64,21 @@ jobs:
         run: pip install bandit && bandit -r todo_project -f json -o bandit-report.json || true
         continue-on-error: true
 
+      - name: Checagem de dependencias
+        uses: dependency-check/Dependency-Check_Action@1.1.0
+        with:
+          path: '.'
+          format: 'HTML'
+          args: >
+            --enableExperimental
+
+      - name: Upload relatorio Checagem de dependencias
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: dependency-check-report
+          path: reports/
+
       - name: Upload do relatorio de seguranca
         uses: actions/upload-artifact@v4
         if: always()
