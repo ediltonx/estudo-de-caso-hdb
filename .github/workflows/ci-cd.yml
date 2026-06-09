@@ -50,6 +50,16 @@ jobs:
           PYTHONPATH: ./todo_project
         run: python -c "from todo_project import app; print(app.name)"
 
+      - name: Rodar testes com pytest
+        run: pytest todo_project/tests/ -v --tb=short --cov=todo_project --cov-report=term-missing || true
+
+      - name: Upload relatorio de cobertura
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-report
+          path: .coverage
+
       - name: Verificacao de seguranca com bandit
         run: pip install bandit && bandit -r todo_project -f json -o bandit-report.json || true
         continue-on-error: true
