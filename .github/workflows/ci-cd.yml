@@ -153,20 +153,22 @@ jobs:
 
       - name: Scan de seguranca com OWASP ZAP
         run: |
-          # Sobe os containers (app + zap definidos no docker-compose)
-          docker compose up --abort-on-container-exit --exit-code-from estudo-de-caso-hdb-zap || ZAP_EXIT=$?
+          set +e
+          docker compose up --abort-on-container-exit --exit-code-from estudo-de-caso-hdb-zap
+          ZAP_EXIT=$?
+          set -e
 
-          # Exit code 2 = warnings encontrados — aceitavel, nao bloqueia o pipeline
-          # Exit code 1 = falhas criticas      — bloqueia
-          # Exit code != 0 e != 2 = erro real  — bloqueia
-          if [ "${ZAP_EXIT:-0}" -eq 2 ]; then
+          docker compose down --volumes --remove-orphans 2>/dev/null || true
+
+          echo "ZAP exit code: ${ZAP_EXIT}"
+
+          if [ "${ZAP_EXIT}" -eq 0 ]; then
+            echo "✅ ZAP concluido sem alertas."
+          elif [ "${ZAP_EXIT}" -eq 2 ]; then
             echo "⚠️  ZAP encontrou warnings de seguranca (exit code 2). Verifique o relatorio."
-            echo "O pipeline continuara pois nenhuma falha critica foi detectada."
-          elif [ "${ZAP_EXIT:-0}" -ne 0 ]; then
+          else
             echo "❌ ZAP falhou com exit code ${ZAP_EXIT}. Verifique falhas criticas no relatorio."
             exit "${ZAP_EXIT}"
-          else
-            echo "✅ ZAP concluido sem alertas."
           fi
 
       - name: Upload relatorio ZAP
@@ -175,3 +177,5 @@ jobs:
         with:
           name: zap-report
           path: zap-report.*
+
+          if-no-files-found: warn
