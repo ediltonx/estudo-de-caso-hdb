@@ -132,7 +132,9 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Preparar pasta de relatorios do ZAP
-        run: mkdir -p zap-reports
+        run: |
+          mkdir -p zap-reports
+          chmod -R 777 zap-reports
 
       - name: Subir stage e executar DAST com ZAP
         run: |
