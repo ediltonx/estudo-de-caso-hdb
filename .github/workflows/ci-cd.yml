@@ -16,7 +16,6 @@ jobs:
   ci:
     name: CI - validar aplicacao
     runs-on: ubuntu-latest
-    container: ghcr.io/gitguardian/wolfi/python:latest
 
     steps:
       - name: Checkout do repositorio
@@ -65,7 +64,6 @@ jobs:
   cd:
     name: CD - buildar imagem Docker
     runs-on: ubuntu-latest
-    container: ghcr.io/gitguardian/wolfi/python:latest
     needs: ci
     if: github.event_name == 'push' && github.ref == 'refs/heads/master'
 
