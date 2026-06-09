@@ -1,0 +1,76 @@
+Relatório de Vulnerabilidades - OWASP ZAP
+=========================================
+
+Este arquivo descreve as vulnerabilidades e alertas de segurança encontrados na aplicação pelo scanner OWASP ZAP.
+
+-------------------------------------------------------------------------------
+🟠 RISCO MÉDIO (Prioridade de Correção)
+-------------------------------------------------------------------------------
+
+1. Content Security Policy (CSP) Header Not Set
+   - O que é: O servidor não está retornando o cabeçalho HTTP "Content-Security-Policy".
+   - Descrição: O CSP é uma camada extra de segurança que ajuda a detectar e mitigar ataques como Cross-Site Scripting (XSS) e injeção de dados. Sem ele, o navegador fica mais permissivo quanto a execução de scripts maliciosos injetados na página.
+   - Ocorrências: 5
+
+2. Missing Anti-clickjacking Header
+   - O que é: A aplicação não está enviando cabeçalhos que impedem a página de ser renderizada dentro de um iframe.
+   - Descrição: A ausência de cabeçalhos como "X-Frame-Options" (ou a diretiva "frame-ancestors" no CSP) permite ataques de Clickjacking, onde um atacante sobrepõe a sua aplicação com um iframe invisível em outro site, enganando o usuário para que ele clique em elementos da sua aplicação inadvertidamente.
+   - Ocorrências: 5
+
+3. Vulnerable JS Library
+   - O que é: Uma biblioteca JavaScript com vulnerabilidades conhecidas (CVEs) está sendo utilizada.
+   - Descrição: O arquivo slim.js do Bootstrap contém o jQuery v3.4.1, que é antigo e possui falhas de segurança públicas associadas a ataques de Cross-Site Scripting (XSS).
+   - Ocorrências: 1
+
+-------------------------------------------------------------------------------
+🟡 RISCO BAIXO
+-------------------------------------------------------------------------------
+
+4. Server Leaks Version Information via "Server" HTTP Response Header Field
+   - O que é: O servidor está retornando sua versão exata no cabeçalho HTTP "Server" (ex: Werkzeug/3.1.8 Python/3.14.5).
+   - Descrição: Este vazamento de informação (Fingerprinting) facilita o trabalho de invasores na busca direcionada por vulnerabilidades (CVEs) específicas destas versões da tecnologia em uso.
+   - Ocorrências: 5
+
+5. Cookie without SameSite Attribute
+   - O que é: Os cookies da aplicação não possuem o atributo "SameSite" configurado.
+   - Descrição: A falta do atributo "SameSite=Lax" ou "SameSite=Strict" faz com que os cookies possam ser enviados em requisições de origem cruzada (cross-site), aumentando substancialmente os riscos de ataques de Cross-Site Request Forgery (CSRF).
+   - Ocorrências: 5
+
+6. X-Content-Type-Options Header Missing
+   - O que é: Faltando o cabeçalho "X-Content-Type-Options: nosniff" nas respostas HTTP.
+   - Descrição: A ausência deste cabeçalho permite que os navegadores realizem "MIME-sniffing", tentando adivinhar o tipo de conteúdo do arquivo. Isso pode permitir que um arquivo de texto inofensivo seja interpretado e executado como um script malicioso.
+   - Ocorrências: 5
+
+7. Cross-Origin-Embedder-Policy Header Missing or Invalid
+   - O que é: A ausência da política de embutir recursos de origem cruzada.
+   - Descrição: Este cabeçalho impede que um documento carregue recursos de origem cruzada que não tenham concedido permissão explícita, ajudando a mitigar ataques baseados em canais laterais, como o Spectre.
+   - Ocorrências: 5
+
+8. Cross-Origin-Opener-Policy Header Missing or Invalid
+   - O que é: O cabeçalho COOP não está configurado.
+   - Descrição: Permite que um site controle se outros documentos incluídos compartilham o mesmo contexto de navegação. Sem ele, janelas de terceiros abertas podem potencialmente acessar dados cruzados.
+   - Ocorrências: 5
+
+9. Cross-Origin-Resource-Policy Header Missing or Invalid
+   - O que é: A política de compartilhamento de recursos entre origens ausente.
+   - Descrição: Outra camada de proteção (opt-in) que define se os recursos podem ou não ser compartilhados com outras origens, essencial para proteção de dados contra leitura indesejada.
+   - Ocorrências: 5
+
+10. Permissions Policy Header Not Set
+   - O que é: A aplicação não restringe as permissões de funcionalidades do navegador.
+   - Descrição: Este cabeçalho permite limitar se a página tem permissão de acessar hardware ou APIs do navegador (como câmera, microfone, localização e modo tela cheia). Sem este cabeçalho, os recursos seguem o comportamento padrão do navegador, que pode ser permissivo.
+   - Ocorrências: 5
+
+11. Cookie Slack Detector
+   - O que é: Alerta comportamental de validação de cookies.
+   - Descrição: O ZAP identificou que fornecer cookies não esperados não alterou o comportamento das respostas de autenticação. Pode ser um indício de falhas lógicas em como a sessão/cookies são aplicados, embora na maioria dos casos dependa da checagem do framework utilizado.
+   - Ocorrências: 5
+
+-------------------------------------------------------------------------------
+🔵 INFORMATIVOS (Para Auditoria)
+-------------------------------------------------------------------------------
+
+- User Controllable HTML Element Attribute (Potential XSS): Entradas do usuário estão refletindo no HTML final. Exige verificação manual para ter certeza de que há proteção de XSS via escaping.
+- Information Disclosure - Suspicious Comments: Foram encontrados comentários no código das páginas web enviadas para o cliente que podem revelar dados sensíveis da estrutura interna.
+- Authentication Request Identified e Session Management Response Identified: O ZAP apenas encontrou onde ocorre o fluxo de Login e criação de Sessão.
+- GET for POST: Requisição GET em fluxos onde um POST pudesse ser mais adequado por questões de segurança no trânsito das informações.
