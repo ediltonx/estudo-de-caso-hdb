@@ -3,6 +3,11 @@ __pycache__/
 *.py[codz]
 *$py.class
 
+
+# others
+zap-reports/
+
+
 # C extensions
 *.so
 
