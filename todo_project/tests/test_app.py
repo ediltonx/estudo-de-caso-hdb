@@ -9,6 +9,7 @@ import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 from todo_project import app, db
+from todo_project.observability import record_user_action
 
 
 @pytest.fixture
@@ -62,3 +63,11 @@ def test_404_error(client):
     """Testa se páginas inválidas retornam 404"""
     response = client.get('/pagina-inexistente')
     assert response.status_code == 404
+
+
+def test_metrics_route(client):
+    """Testa se a rota de métricas expõe o formato Prometheus"""
+    record_user_action('test', 'success')
+    response = client.get('/metrics')
+    assert response.status_code == 200
+    assert b'todo_app_user_actions_total' in response.data
