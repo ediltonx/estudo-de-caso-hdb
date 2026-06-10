@@ -13,6 +13,36 @@ services:
       - "5000:5000"
     restart: unless-stopped
 
+  netdata:
+    image: netdata/netdata:stable
+    container_name: estudo-de-caso-hdb-netdata
+    depends_on:
+      - app
+    pid: host
+    network_mode: host
+    restart: unless-stopped
+    cap_add:
+      - SYS_PTRACE
+      - SYS_ADMIN
+    security_opt:
+      - apparmor:unconfined
+    environment:
+      - DO_NOT_TRACK=1
+    volumes:
+      - netdatalib:/var/lib/netdata
+      - netdatacache:/var/cache/netdata
+      - ./netdata/go.d.conf:/etc/netdata/go.d.conf:ro
+      - ./netdata/go.d/prometheus.conf:/etc/netdata/go.d/prometheus.conf:ro
+      - /:/host/root:ro,rslave
+      - /etc/passwd:/host/etc/passwd:ro
+      - /etc/group:/host/etc/group:ro
+      - /etc/localtime:/etc/localtime:ro
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /etc/os-release:/host/etc/os-release:ro
+      - /var/log:/host/var/log:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+
   zap:
     image: ghcr.io/zaproxy/zaproxy:stable
     container_name: estudo-de-caso-hdb-zap
@@ -51,3 +81,7 @@ services:
     volumes:
       - ./zap-reports:/zap/wrk
     restart: "no"
+
+volumes:
+  netdatalib:
+  netdatacache:
